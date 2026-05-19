@@ -12,22 +12,7 @@
 5. 首次连接真实服务器前，建议先使用“预检”功能确认同步结果。
 6. 如远程目录有重要配置文件或附件目录，请提前设置禁止删除规则。
 
-建议发布内容：
 
-- README.md
-- CHECKSUMS.txt
-- NOTICE.txt
-- Release 附件中的 Windows EXE
-
-不建议发布内容：
-
-- config.yaml
-- config.*.yaml
-- log/
-- reports/
-- queue*.json
-- 源码文件
-- 任何真实服务器连接信息
 
 作者信息：
 作者：云遮天
