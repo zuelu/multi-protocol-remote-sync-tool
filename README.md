@@ -82,13 +82,7 @@ Get-FileHash -Algorithm SHA256 -LiteralPath ".\多协议远程自动同步工具
 - `NOTICE.txt`：发布说明和使用提醒
 - Release 附件：打包后的 Windows EXE
 
-不会上传：
 
-- 源码文件
-- 真实配置文件
-- 日志目录
-- 队列文件
-- 账号密码或服务器信息
 
 ## 作者信息
 
