@@ -1,0 +1,32 @@
+# Runtime configuration and secrets
+config.yaml
+config.*.yaml
+*.bak
+*.tmp
+
+# Runtime state
+log/
+logs/
+reports/
+queue*.json
+*.pid
+
+# Source files should not be published in this release-only repository
+*.py
+*.pyw
+__pycache__/
+protocols/
+tests/
+*.spec
+requirements.txt
+build*/
+dist*/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Keep release binaries in GitHub Releases rather than committing large EXE files
+*.exe
