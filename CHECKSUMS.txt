@@ -1,0 +1,12 @@
+多协议远程自动同步工具.exe
+
+File size: 52,141,495 bytes
+Build time: 2026-05-14 16:44:37 +08:00
+SHA256: 12C9DC19EEA18EC1DFA8256E8A557248E2BC3C34533AC0ABF015DF859160096D
+
+PowerShell 校验命令：
+Get-FileHash -Algorithm SHA256 -LiteralPath ".\多协议远程自动同步工具.exe"
+
+说明：
+- 只有 SHA256 完全一致时，才表示下载文件与发布文件一致。
+- 如果校验值不同，请不要继续运行该文件。
