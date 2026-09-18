@@ -1,19 +1,19 @@
-多协议远程自动同步工具.exe
+multi-protocol-remote-sync-tool-v1.1.1.exe
 
-Version: 1.1.0.0
-File size: 69,664,858 bytes
-Build time: 2026-09-18 15:19:57 +08:00
-SHA256: 7BC2CB63996BFBAEB900DDA2675D51FDA28F6EDD3319A2839C2370F91D4DA191
+Version: 1.1.1.0
+File size: 52,152,160 bytes
+Build time: 2026-09-18 15:36:51 +08:00
+SHA256: 0A5AEC812E80AB52139C0B60D22CBBE515CF3935BBE8285E0D3DB1EFD03869AF
 
-多协议远程自动同步工具-1.1.0-win64.zip
+multi-protocol-remote-sync-tool-v1.1.1-win64.zip
 
-Version: 1.1.0
-File size: 69,106,434 bytes
-Build time: 2026-09-18 15:21:03 +08:00
-SHA256: B262F9DAC8345A846F7EFC4B338FFA5FD0A953EC93C516FA84E16EDB4A8096D1
+Version: 1.1.1
+File size: 51,789,305 bytes
+Build time: 2026-09-18 15:40:15 +08:00
+SHA256: AB8935139B784EA68C8E5D6BD28D3891252530E203D7E8FA1586811A383E0098
 
 PowerShell 校验命令：
-Get-FileHash -Algorithm SHA256 -LiteralPath ".\多协议远程自动同步工具.exe"
-Get-FileHash -Algorithm SHA256 -LiteralPath ".\多协议远程自动同步工具-1.1.0-win64.zip"
+Get-FileHash -Algorithm SHA256 -LiteralPath ".\multi-protocol-remote-sync-tool-v1.1.1.exe"
+Get-FileHash -Algorithm SHA256 -LiteralPath ".\multi-protocol-remote-sync-tool-v1.1.1-win64.zip"
 
 说明：只有 SHA256 完全一致时，才表示下载文件与发布文件一致。
