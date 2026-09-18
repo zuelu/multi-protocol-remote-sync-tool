@@ -4,9 +4,9 @@ Windows 桌面端远程文件自动同步工具，支持 FTP、FTPS、SFTP、rsy
 
 > 说明：本仓库为公开发布仓库，只提供打包后的 Windows EXE、使用说明和校验信息，不发布原始源代码。
 
-**当前版本：v1.1.1（2026-09-18）**
+**当前版本：v1.2.0（2026-09-18）**
 
-本版本修复 FTP 连接恢复、远端清单不完整时的安全中止、Windows 队列文件锁、传输期间二次修改漏传等问题，并增加队列恢复快照。同时修复 Windows 打包时错误混入 Poppler ICU DLL 导致 QtCore 无法启动的问题。
+本版本修复 FTP 连接恢复、远端清单不完整时的安全中止、Windows 队列文件锁、传输期间二次修改漏传等问题，并增加队列恢复快照。同时修复 Windows 打包时错误混入 Poppler ICU DLL 导致 QtCore 无法启动的问题。新增 FTP/FTPS SOCKS5 代理，支持代理主机、端口及可选用户名密码，控制连接和被动数据连接均通过代理。
 
 ## 主要用途
 
@@ -67,7 +67,7 @@ Windows 桌面端远程文件自动同步工具，支持 FTP、FTPS、SFTP、rsy
 
 ## 下载与校验
 
-请在仓库 Release 区域下载 v1.1.1 EXE 或完整 ZIP 包。
+请在仓库 Release 区域下载 v1.2.0 EXE 或完整 ZIP 包。
 
 当前构建文件信息见 [CHECKSUMS.txt](./CHECKSUMS.txt)。下载后可在 PowerShell 中校验：
 
