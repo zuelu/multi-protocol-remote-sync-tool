@@ -1,0 +1,191 @@
+# ==========================================================
+# 多协议远程自动同步工具 - 配置示例（多组）
+# 复制本文件为 config.yaml 后再修改
+#
+# 用法：
+#   - groups 数组下放任意多组，每组独立运行
+#   - 任意组的 ftp.host / ftp.user / ftp.password / paths.local_root /
+#     paths.remote_root 留空（或为 "your.server.com" / "username" 等示例值）
+#     → 该组自动跳过，不影响其他组
+#   - 显式写 enabled: false 也会跳过
+#   - defaults 段是各组的默认继承值；组内若再写同名字段，则覆盖 defaults
+# ==========================================================
+
+# ---------- 全局默认值（被各组继承，可在组里覆盖）----------
+defaults:
+  protocol: "ftp"
+  sync_mode: "upload_only"            # upload_only | download_only | bidirectional
+  conflict_policy: "newer_or_size_diff" # ask | overwrite | newer | size_diff | newer_or_size_diff | resume | rename | skip
+  ftp:
+    port: 21
+    passive: true
+    encoding: "utf-8"
+    timeout: 30
+    tls: false
+    keepalive_interval: 25
+    reconnect_max_delay: 30
+    proxy_type: "none"       # none | http | socks5
+    proxy_host: ""
+    proxy_port: 1080
+    proxy_user: ""           # SOCKS5 可选用户名
+    proxy_password: ""       # SOCKS5 可选密码
+  concurrency: 4
+  large_file_threshold: 5242880     # 5 MB
+  use_lftp_if_available: true
+  reconcile_on_start: true
+  sync_delete: true
+  # 远端删除保护：匹配这些规则的远端文件不会被删除（适合保护 uploads / 附件 / 测试数据）
+  protect_remote_delete_patterns:
+    # 网站/项目运行配置文件：远端可能与本地不同，默认不删除
+    - ".env"
+    - ".env.*"
+    - "**/.env"
+    - "**/.env.*"
+    - ".user.ini"
+    - "**/.user.ini"
+    - ".htaccess"
+    - "**/.htaccess"
+    # 图片/附件文件：保护远端运行和测试数据
+    - "**/*.png"
+    - "**/*.jpg"
+    - "**/*.jpeg"
+    - "**/*.gif"
+    - "**/*.webp"
+    - "**/*.svg"
+    - "**/*.ico"
+    - "**/*.bmp"
+    - "**/*.avif"
+  debounce_ms: 800
+  retry:
+    max_attempts: 6
+    base_delay: 2
+  exclude:
+    - ".git/**"
+    - ".idea/**"
+    - ".vscode/**"
+    - "__pycache__/**"
+    - "node_modules/**"
+    - "小工具/**"
+    - "**/*.log"
+    - "**/*.tmp"
+    - "**/~$*"
+    - "**/.DS_Store"
+    - "**/Thumbs.db"
+  # 规则优先级：
+  # - 同步判断：分组忽略规则 > 分组同步规则(include_patterns) > 全局忽略规则(defaults.exclude)
+  # - 禁止删除判断：分组禁止删除规则 > 全局禁止删除规则(defaults.protect_remote_delete_patterns)
+
+# ---------- 同步组（支持多协议：ftp / sftp / rsync）----------
+groups:
+
+  # —— FTP 示例（默认协议；填上真实信息即可生效）——
+  - name: "site-ftp"
+    enabled: true
+    protocol: "ftp"
+    sync_mode: "upload_only"
+    conflict_policy: "newer_or_size_diff"
+    connection:
+      host: "your.server.com"
+      port: 21
+      user: "username"
+      password: "password"
+      passive: true
+      tls: false
+      encoding: "utf-8"
+      proxy_type: "none"     # none | http | socks5
+      proxy_host: ""         # 代理服务器 IP 或域名
+      proxy_port: 1080
+      proxy_user: ""         # SOCKS5 可选用户名
+      proxy_password: ""     # SOCKS5 可选密码
+    # 每行是一条固定目录配对；不按两个独立列表或行下标推导目标。
+    directory_pairs:
+      - local_root: "F:/项目/站点1"
+        remote_root: "/www/wwwroot/site1"
+      - local_root: "F:/项目/静态资源"
+        remote_root: "/www/wwwroot/site1-assets"
+    include_patterns: []              # 分组同步白名单；为空表示同步全部候选文件
+    exclude: []                       # 分组忽略规则；为空表示不额外忽略
+    protect_remote_delete_patterns: [] # 分组禁止删除规则；为空表示不额外禁止删除
+
+  # —— SFTP 示例（基于 paramiko）——
+  - name: "site-sftp"
+    enabled: false
+    protocol: "sftp"
+    connection:
+      host: ""
+      port: 22
+      user: ""
+      auth_mode: "password"     # password | key_file
+      password: ""
+      key_file: ""              # auth_mode=key_file 时使用
+      key_passphrase: ""
+      known_hosts_policy: "auto_add"  # auto_add | strict
+    directory_pairs:
+      - local_root: ""
+        remote_root: ""
+
+  # —— rsync 示例（需本机有 rsync 可执行文件；Windows 可装 cwRsync）——
+  - name: "site-rsync"
+    enabled: false
+    protocol: "rsync"
+    connection:
+      mode: "ssh"               # ssh | daemon
+      host: ""
+      port: 22
+      user: ""
+      ssh_key: ""               # ssh 模式可选私钥
+      password: ""              # 仅 daemon 模式（通过 RSYNC_PASSWORD 注入）
+      remote_module: ""         # 仅 daemon 模式
+      rsync_extra_args: []      # 例：["--exclude=*.tmp"]
+      ssh_extra_args: []
+    directory_pairs:
+      - local_root: ""
+        remote_root: ""
+
+
+# ---------- 控制台显示（全局，所有组共用一个窗口）----------
+console:
+  rolling: true       # true=最近 N 条彩色滚动屏；false=普通追加输出
+  max_lines: 100      # 滚动屏最大保留行数
+  colored: true       # 是否启用 ANSI 颜色
+
+# ---------- 文件日志（全局）----------
+log:
+  file: "ftp_sync.log"
+  level: "INFO"            # DEBUG / INFO / WARNING / ERROR
+  max_bytes: 5242880       # 单文件 5MB 轮转
+  backup_count: 5
+
+# ---------- 增强能力（保守默认）----------
+dry_run_preview:
+  enabled: false            # 预分析只生成差异计划，不执行同步
+stability:
+  wait_seconds: 2           # 上传前等待文件大小/mtime 稳定
+periodic_reconcile:
+  enabled: false            # watchdog 之外的周期兜底对账
+  interval_minutes: 15
+verify_after_transfer:
+  enabled: false            # 传输后校验；默认关闭
+  mode: "size"              # size | size_mtime | hash_local
+recycle:
+  enabled: false            # 删除远端前移动到 .ftp_sync_recycle
+  retention_days: 14
+  max_versions: 5
+rate_limit:
+  upload_kbps: 0            # 0=不限速
+  download_kbps: 0
+schedule:
+  enabled: false            # 同步时间窗口；窗口外跳过执行
+  windows: []               # 例：["09:00-18:00", "22:00-02:00"]
+notifications:
+  enabled: true
+  on_error: true
+  on_conflict: false
+  on_summary: false
+tray:
+  minimize_on_close: false
+  start_with_windows: false
+reports:
+  enabled: true             # reports/ 下生成预分析和运行报告
+compatibility_checks:
+  enabled: true             # 预分析/体检提示路径兼容风险

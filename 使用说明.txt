@@ -1,0 +1,247 @@
+1.3.0 多目录配对与稳定性更新（2026-09-30）
+==========================================
+同一同步组可在“目录配对”表格新增多行，每行的本地目录只对应该行远端目录。
+新增、移除和选择本地目录均按整行配对操作。共享组连接、规则和传输并发上限，
+各配对使用独立队列、监听和对账；两个目录中有同名文件不会互相串目标。
+
+配置格式：
+  directory_pairs:
+    - local_root: "D:/sites/app"
+      remote_root: "/srv/app"
+    - local_root: "D:/sites/assets"
+      remote_root: "/srv/assets"
+
+旧 paths 会自动备份并迁移为一条配对。请先预检核对全部目录。
+两侧目录不可重复或嵌套；FTP/SFTP/rsync SSH 的多目录目标必须是绝对路径。
+rsync daemon 的目标相对于模块根目录，data 和 /data 会按同一目标校验。
+本地目录缺失或不是目录时整组不运行，坏配对不会偷偷回退旧 paths。
+目录身份含协议、服务器、账号、端口和两侧路径；修改目标会换新队列，重排行不换队列。
+旧版未绑定目录的队列文件保留，不直接重放；升级后请启用启动对账重建待办。
+暂停或停止期间的待办继续保存；点击停止后等待保存完成再退出。
+同一配置目录只允许一个同步写进程，复制组不能共用自定义持久队列。
+
+本地扫描遇到权限/文件读取错误、根目录失效或目录链接时取消本轮对账；
+远端清单失败也取消，不会从部分清单推导上传/删除。
+软件内部 .part 临时文件和 .ftp_sync_recycle 回收目录不参与业务同步，白名单不覆盖此保护。
+FTP 默认重传遗留 .part，避免源文件已变化却误用旧临时内容；明确选择 resume 时仍支持续传。
+FTP 尽量直接改名替换目标；服务器不支持覆盖改名时仍需删除原目标后改名，该窗口内失败可重试。
+目录校验不能判断人工选择的服务器目录是否符合业务意图，首次实际同步仍须预检。
+
+本机验证覆盖多目录同名文件上传/下载/删除隔离、实时监听和正常停止。
+SFTP/rsync 配对和清单错误有自动回归；本次未接入真实 SFTP/rsync 服务器做端到端测试，
+也不代表所有网络/服务器环境已完成长期运行验证。
+
+多协议远程自动同步工具 使用说明
+============================================
+
+【目录文件】
+  ftp_sync.py              核心程序
+  config_manager.py        桌面版配置管理模块
+  gui_app.py               桌面版主程序（PySide6 / A 方案管理后台式）
+  config.example.yaml      多组配置示例（不要直接改）
+  config.yaml              你的多组配置（首次运行 run.bat 自动生成）
+  requirements.txt         Python 依赖（watchdog / PyYAML / colorama / PySide6 / pyinstaller）
+  run.bat                  ★启动命令行版（前台彩色滚动日志窗口）
+  run_gui.bat              ★启动桌面版（PySide6 GUI）
+  build_exe.bat            打包桌面版 EXE（PyInstaller）
+  ftp_sync_gui.spec        PyInstaller 配置文件
+  stop.bat                 兜底停止命令行版（一般直接 Ctrl+C 即可）
+  ftp_sync.log             运行日志（自动轮转，永远完整）
+  ftp_sync.pid             当前运行进程 PID（运行时生成）
+  queue.组名.json          每组独立任务队列（崩溃 / 关机重启都不丢）
+
+【桌面版使用说明】
+  ・启动：双击 run_gui.bat（首次运行会自动安装 PySide6 等依赖）
+  ・界面布局（A 方案）：
+      顶部状态条：运行状态 / 有效同步组数量 / 子进程 PID
+      左侧导航：总览 / 同步组 / 实时日志 / 删除保护 / 全局设置 / 关于
+      右侧内容区：根据导航切换
+  ・配置管理：在「同步组」页可视化新增 / 编辑 / 复制 / 删除同步组，
+       「删除保护」页编辑保护规则，「全局设置」页编辑 defaults
+  ・同步组编辑器支持选择同步模式：仅上传 / 仅下载 / 双向同步
+  ・同步组编辑器支持选择文件比对模式：询问操作、覆盖、源文件较新覆盖、大小不同覆盖、
+       大小不同或源文件较新覆盖、继续文件传输、重命名、跳过
+  ・所有保存动作都会先把旧 config.yaml 按时间戳备份，默认保留最近 5 份
+  ・启动 / 停止：在「总览」页或顶部按钮点击；GUI 通过子进程方式调用 ftp_sync.py，
+       不会破坏命令行版行为；关闭主窗口会自动停止子进程
+  ・实时日志：「实时日志」页最多保留 500 行，按等级着色；用户向上翻看时不会被强制滚到底部
+       「清空显示」后方显示本次同步进程累计统计：成功、失败、重试、跳过、上传、下载、
+       删除和累计传输量；清空日志不会清空统计
+  ・多组运行时「实时日志」会自动拆分为「全部日志」和每个同步组独立 TAB；只有 1 个有效组时保持单页日志
+  ・「同步组」页支持「预分析」和「配置体检」：
+       预分析会在界面弹出可读结果，同时生成 reports/preview-*.json，不上传、不下载、不删除
+       配置体检检查本地目录、连接字段、占位密码、远端目录和路径兼容风险
+  ・「全局设置」页可配置稳定等待、周期兜底对账、传输后校验、回收保护、限速、时间窗口、托盘和通知
+  ・打包 EXE：双击 build_exe.bat，会在 dist/ 输出 多协议远程自动同步工具.exe，
+       双击 EXE 与同目录 config.yaml 协同工作
+  ・命令行版仍可用：双击 run.bat 即可，桌面版和命令行版共用同一份 config.yaml
+
+【首次使用】
+  1) 双击 run.bat：自动复制出 config.yaml 并安装依赖
+  2) 用编辑器打开 config.yaml，在 groups: 下填写同步组
+  3) 每个同步组至少需要填写：
+        name
+        ftp.host / ftp.user / ftp.password
+        paths.local_root
+        paths.remote_root
+  4) 再次双击 run.bat：弹出彩色窗口，所有有效同步组会一起运行
+
+【多组配置规则】
+  groups: 下可以放任意多组：
+
+    - name: "xxx"
+      enabled: true
+      protocol: "ftp"
+      sync_mode: "upload_only"             # upload_only | download_only | bidirectional
+      conflict_policy: "newer_or_size_diff" # ask | overwrite | newer | size_diff | newer_or_size_diff | resume | rename | skip
+      connection:
+        host: "XXX.XXX.XXX.XXX"
+        port: 21
+        user: "xxx"
+        password: "******"
+        proxy_type: "none"                # none | http | socks5
+        proxy_host: ""                    # 代理服务器 IP 或域名
+        proxy_port: 1080
+        proxy_user: ""                    # SOCKS5 可选
+        proxy_password: ""                # SOCKS5 可选
+      paths:
+        local_root: "F:/xx/xxx/src"
+        remote_root: "/src"
+
+  生效规则：
+    ✓ 已填写完整的组会生效
+    ✓ enabled: false 的组会跳过
+    ✓ host / user / password / local_root / remote_root 任意一项为空会跳过
+    ✓ local_root 本地目录不存在会跳过
+    ✓ 未填写的预留组不会影响其它同步组
+    ✓ 每组独立 FTP 连接、独立上传队列、独立本地目录、独立远端目录
+
+【defaults 默认继承】
+  config.yaml 顶部 defaults: 是所有组的默认值。
+  例如 concurrency、exclude、retry、sync_delete、reconcile_on_start 等都可以统一写在 defaults。
+  如果某个组自己写了同名配置，则该组覆盖默认值。
+
+【FTP / FTPS 代理设置】
+  - 在“同步组 → 编辑”中选择代理类型：不使用代理、HTTP/1.1 CONNECT、SOCKS5。
+  - SOCKS5 支持代理主机、代理端口、可选用户名和密码；只填写密码而不填写用户名会被拒绝。
+  - 代理模式会同时代理 FTP 控制连接和 EPSV/PASV 数据连接，不会只代理登录连接。
+  - 代理模式必须启用 PASV 被动模式；程序不会在代理失败后静默回退直连。
+  - SOCKS5 使用域名地址类型把目标主机交给代理解析，避免本地 DNS 与代理出口不一致。
+  - 旧版 connection.http_proxy: "http://127.0.0.1:10808" 配置仍可继续使用，保存后会转成结构化代理字段。
+
+【每组可单独覆盖的常用项】
+  - concurrency: 2                         # 单组并发上传数
+  - queue_file: "queue.site1.json"         # 单组队列文件名
+  - exclude:                               # 单组排除规则
+      - ".git/**"
+      - "**/*.log"
+  - sync_delete: false                     # 单组关闭删除同步
+  - reconcile_on_start: false              # 单组关闭启动对账
+  - protect_remote_delete_patterns:        # 单组远端删除保护规则
+      - ".env"
+      - ".env.*"
+      - "**/.env"
+      - "**/.env.*"
+      - ".user.ini"
+      - "**/.user.ini"
+      - ".htaccess"
+      - "**/.htaccess"
+      - "**/*.png"
+      - "**/*.jpg"
+      - "uploads/**"
+  - stability:
+      wait_seconds: 2                      # 上传前等待文件稳定
+  - periodic_reconcile:
+      enabled: false
+      interval_minutes: 15                 # watchdog 之外的兜底对账
+  - verify_after_transfer:
+      enabled: false
+      mode: "size"                         # 传输后大小校验
+  - recycle:
+      enabled: false                       # 删除远端前移入 .ftp_sync_recycle
+  - rate_limit:
+      upload_kbps: 0
+      download_kbps: 0                     # 0 表示不限速
+  - schedule:
+      enabled: false
+      windows: ["09:00-18:00"]             # 窗口外跳过执行
+
+【日常使用】
+  ・启动：双击 run.bat
+  ・停止：在窗口里按 Ctrl+C；或双击 stop.bat 兜底
+  ・看历史日志：打开 ftp_sync.log
+  ・窗口日志会显示 [组名] 前缀，方便区分是哪一组在上传/删除/重连
+  ・run.bat 内部提示使用英文，是为了避免 Windows 批处理中文编码导致双击闪退；程序日志仍为中文
+
+【核心能力】
+  ✓ 多协议同步：FTP / FTPS、SFTP（paramiko）、rsync（ssh / daemon）
+  ✓ 新增/编辑同步组时通过「协议」下拉切换专用配置面板
+  ✓ 编辑器内「测试连接」按钮可立即验证账号可用性
+  ✓ 多组配置：多个云服务器 / 多个账号 / 多组本地和云端目录
+  ✓ 未填写同步组自动跳过，不影响已填写组
+  ✓ watchdog 实时事件触发（不轮询）
+  ✓ 每组多文件并发上传，同一文件自动串行
+  ✓ 每组任务持久化到独立 queue.组名.json，崩溃/重启都不丢
+  ✓ 启动时每组独立全量对账，杜绝"没启动期间的漏传"
+  ✓ 本地删除/重命名 → 自动同步删除远端（但受保护附件不会删除）
+  ✓ 远端删除保护：默认保护 .env/.env.*、.user.ini、.htaccess 以及 png/jpg/jpeg/gif/webp/svg/ico/bmp/avif，保留远端运行配置和测试数据
+  ✓ 大文件断点续传：lftp（如可用）/ ftplib REST + .part 临时文件原子改名
+  ✓ FTP 断线自动重连：心跳看门狗 + 永不放弃的指数退避
+  ✓ FTP / FTPS 代理：支持 HTTP CONNECT 和 SOCKS5，SOCKS5 可选用户名密码认证
+  ✓ 彩色实时日志，仅显示最近 100 条，超出自动清窗
+       INFO=绿、WARNING=黄、ERROR=红、入队=青、对账=蓝
+       "上传完成""重连""死信" 等关键词额外高亮
+  ✓ 多组日志 TAB：多组运行时按同步组拆分日志，方便只看某一组
+  ✓ 预分析：扫描本地/远端差异并生成 JSON 报告，不执行任何同步动作
+  ✓ 配置体检：检查路径、连接字段、占位配置和路径兼容风险
+  ✓ 同步报告：运行结束后在 reports/ 下生成简明 JSON 报告
+  ✓ 稳定等待：上传前等待文件大小和修改时间稳定，避免半写入文件被上传
+  ✓ 周期兜底：可选定时对账，补偿文件系统事件漏报
+  ✓ 传输校验：可选上传/下载后大小校验，失败进入重试流程
+  ✓ 回收保护：可选删除远端前移动到 .ftp_sync_recycle
+  ✓ 冲突记录：覆盖/跳过/重命名等决策写入 reports/conflicts.jsonl
+  ✓ 时间窗口/限速/托盘/通知：均可在全局设置中启用或关闭
+  ✓ 失败重试：指数退避，超出阈值进入死信（保存在对应 queue 文件的 dead 段）
+
+【多协议依赖】
+  - FTP / FTPS：无需额外依赖（Python 内置 ftplib）
+  - SFTP：使用 paramiko，requirements.txt 已包含；首次运行会自动安装
+  - rsync：依赖本机 rsync 可执行文件；Windows 建议安装 cwRsync 或 Git-Bash 自带的 rsync，
+           并把 rsync.exe 加入 PATH。rsync 不可用时该组会跳过且日志会提示。
+
+【SFTP / rsync 注意事项】
+  - SFTP 支持 password 与 key_file 两种认证方式；首次连接建议保持 known_hosts_policy=auto_add
+  - rsync ssh 模式会通过 ssh user@host 操作远端；请确认服务器允许 key/password 登录
+  - rsync daemon 模式适合配合 rsyncd 使用，密码通过 RSYNC_PASSWORD 注入，不留在命令行
+
+【lftp 安装（可选，强烈推荐用于大文件）】
+  - Scoop: scoop install lftp
+  - Choco: choco install lftp
+  - WSL :  apt install lftp
+  本工具检测不到 lftp 会自动回退到 ftplib REST 续传，仍可用。
+
+【故障排查】
+  - 某组没有启动：看窗口/ftp_sync.log 中 [组名] 的跳过原因
+  - 远端图片/.env/.user.ini/.htaccess 没有跟随本地删除：这是默认保护策略，避免删除网站运行配置和测试附件；如确实要删除，请从 protect_remote_delete_patterns 移除对应规则
+  - 上传一直重试：看 ftp_sync.log，确认账号、被动模式、端口、防火墙
+  - 中文文件名乱码：把对应组或 defaults 中 ftp.encoding 改为 gbk
+  - 想清空某组队列：先 Ctrl+C 退出，再删除对应 queue.组名.json
+  - 想看死信任务：打开对应 queue.组名.json 的 "dead" 段
+  - 彩色不显示：把 console.colored 设为 false，或确认是 Windows 10+
+
+【右键菜单与分组规则】
+- 在“同步组”页右键任一同步组，可执行：启/停用、编辑、预检、同步规则、忽略规则、禁止删除规则、强制执行、查看日志、删除。
+- “预检”只针对当前组执行一次差异扫描，不上传、不下载、不删除，并在日志页输出差异明细，同时生成 reports/preview-*.json。
+- “强制执行”只针对当前组执行一次对账和同步，即使该组已停用也会执行；但不会跳过配置完整性、连接、路径、删除保护等安全检查。
+- “同步规则”是分组白名单：为空表示同步所有候选文件；填写后只同步命中的目录或文件。
+- “忽略规则”为空表示不额外忽略；命中后当前组不会上传、下载或删除该路径。
+- “禁止删除规则”为空表示不额外禁止；命中后当前组不会删除对应远端文件。
+- 规则一行一条，支持目录、后缀、文件名和通配符，例如：uploads/**、**/*.php、config.yaml、assets/**/*.png、backup-*.zip。
+- 同步优先级：分组忽略规则 > 分组同步规则 > 全局忽略规则。
+- 禁止删除优先级：分组禁止删除规则 > 全局禁止删除规则。
+- 分组规则只对当前同步组生效，不会跨组影响。
+
+【界面细节】
+- 关于页支持滚动，小窗口模式下也可以查看完整内容。
+- 左侧导航点击后不显示文字虚线焦点框。
+- 关于页中的 USDT 打赏地址已标注为 USDT-TRC20（TRON/TRON20 网络），请不要使用 ERC20 或 BEP20 网络转入。
